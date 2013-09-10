@@ -8,43 +8,47 @@ import akka.actor.Terminated
 object Receptionist {
   private case class Job(client: ActorRef, url: String)
   case class Get(url: String)
-  case class Result(links: Set[String])
-  case object Failed
+  case class Result(url: String, links: Set[String])
+  case class Failed(url: String)
 }
 
 class Receptionist extends Actor {
   import Receptionist._
 
-  def receive = runDirectly
+  var reqNo = 0
 
-  val runDirectly: Receive = {
-    case Get(url)      ⇒ startController(sender, url, Vector.empty)
-    case Terminated(_) ⇒ // ignore
+  def receive = waiting
+
+  val waiting: Receive = {
+    case Get(url) ⇒
+      context.become(runNext(Vector(Job(sender, url))))
   }
 
-  def running(client: ActorRef, controller: ActorRef, queue: Vector[Job]): Receive = {
-    case r: Result                ⇒ { client ! r; nextJob(queue) }
-    case Terminated(`controller`) ⇒ { client ! Failed; nextJob(queue) }
-    case Terminated(_)            ⇒ // ignore
-    case Get(url)                 ⇒ enqueueJob(controller, client, queue, Job(sender, url))
+  def running(queue: Vector[Job]): Receive = {
+    case Controller.Result(links) ⇒
+      val job = queue.head
+      job.client ! Result(job.url, links)
+      context.stop(sender)
+      context.become(runNext(queue.tail))
+    case Get(url) ⇒
+      context.become(enqueueJob(queue, Job(sender, url)))
   }
 
-  def startController(client: ActorRef, url: String, queue: Vector[Job]): Unit = {
-    val controller = context.actorOf(Props(new Controller(url)))
-    context.watch(controller)
-    context.become(running(client, controller, queue))
-  }
-
-  def nextJob(queue: Vector[Job]): Unit =
-    if (queue.isEmpty) context.become(runDirectly)
+  def runNext(queue: Vector[Job]): Receive = {
+    reqNo += 1
+    if (queue.isEmpty) waiting
     else {
-      val Job(client, url) = queue.head
-      startController(client, url, queue.tail)
+      val controller = context.actorOf(Props[Controller], s"c$reqNo")
+      controller ! Controller.Check(queue.head.url, 2)
+      running(queue)
     }
+  }
 
-  def enqueueJob(controller: ActorRef, client: ActorRef, queue: Vector[Job], job: Job): Unit = {
-    if (queue.size > 10) sender ! Failed
-    else context.become(running(controller, client, queue :+ job))
+  def enqueueJob(queue: Vector[Job], job: Job): Receive = {
+    if (queue.size > 3) {
+      sender ! Failed(job.url)
+      running(queue)
+    } else running(queue :+ job)
   }
 
 }

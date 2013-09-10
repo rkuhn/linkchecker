@@ -5,31 +5,35 @@ import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.SupervisorStrategy
 import akka.actor.ActorLogging
+import akka.actor.ReceiveTimeout
+import scala.concurrent.duration._
+import akka.actor.ActorRef
 
 object Controller {
   case class Check(url: String, depth: Int)
+  case class Result(links: Set[String])
 }
 
-class Controller(url: String, depth: Int = 2) extends Actor with ActorLogging {
+class Controller extends Actor with ActorLogging {
   import Controller._
   
-  override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
-  
-  self ! Check(url, depth)
-  
   var cache = Set.empty[String]
+  var children = Set.empty[ActorRef]
+  
+  context.setReceiveTimeout(10.seconds)
   
   def receive = {
     case Check(url, depth) =>
-      log.info("{} checking {}", depth, url)
+      log.debug("{} checking {}", depth, url)
       if (!cache(url) && depth > 0)
-        context.watch(context.actorOf(Props(new Getter(url, depth - 1))))
+        children += context.actorOf(Props(new Getter(url, depth - 1)))
       cache += url
-    case Terminated(_) =>
-      if (context.children.isEmpty) {
-        context.parent ! Receptionist.Result(cache)
-        context.stop(self)
-      }
+    case Getter.Done =>
+      children -= sender
+      if (children.isEmpty)
+        context.parent ! Result(cache)
+    case ReceiveTimeout =>
+      context.children foreach (_ ! Getter.Abort)
   }
   
 }
