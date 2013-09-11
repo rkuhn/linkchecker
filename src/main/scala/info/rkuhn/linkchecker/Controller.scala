@@ -22,11 +22,13 @@ class Controller extends Actor with ActorLogging {
   
   context.setReceiveTimeout(10.seconds)
   
+  def getterProps(url: String, depth: Int): Props = Props(new Getter(url, depth))
+  
   def receive = {
     case Check(url, depth) =>
       log.debug("{} checking {}", depth, url)
       if (!cache(url) && depth > 0)
-        children += context.actorOf(Props(new Getter(url, depth - 1)))
+        children += context.actorOf(getterProps(url, depth - 1))
       cache += url
     case Getter.Done =>
       children -= sender

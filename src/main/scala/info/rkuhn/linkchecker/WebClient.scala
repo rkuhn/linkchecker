@@ -5,11 +5,15 @@ import com.ning.http.client.AsyncHttpClient
 import scala.concurrent.Promise
 import java.util.concurrent.Executor
 
-object WebClient {
+trait WebClient {
+  def get(url: String)(implicit exec: Executor): Future[String]
+}
+
+case class BadStatus(status: Int) extends RuntimeException
+
+object AsyncWebClient extends WebClient {
 
   private val client = new AsyncHttpClient
-
-  case class BadStatus(status: Int) extends RuntimeException
 
   def get(url: String)(implicit exec: Executor): Future[String] = {
     val f = client.prepareGet(url).execute();
@@ -31,5 +35,5 @@ object WebClient {
 
 object WebClientTest extends App {
   import scala.concurrent.ExecutionContext.Implicits.global
-  WebClient get "http://www.google.com/1" map println foreach (_ ⇒ WebClient.shutdown())
+  AsyncWebClient get "http://www.google.com/1" map println foreach (_ ⇒ AsyncWebClient.shutdown())
 }

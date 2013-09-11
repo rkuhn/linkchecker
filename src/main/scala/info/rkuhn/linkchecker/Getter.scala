@@ -16,8 +16,9 @@ class Getter(url: String, depth: Int) extends Actor {
   import Getter._
 
   implicit val executor = context.dispatcher.asInstanceOf[Executor with ExecutionContext]
+  def client: WebClient = AsyncWebClient
 
-  WebClient get url pipeTo self
+  client get url pipeTo self
 
   def receive = {
     case body: String ⇒
