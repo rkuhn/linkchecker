@@ -11,7 +11,7 @@ import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.ActorRef
 
-class Parent(child: Props, fwd: ActorRef) extends Actor {
+class StepParent(child: Props, fwd: ActorRef) extends Actor {
   context.actorOf(child, "child")
   def receive = {
     case msg ⇒ fwd.tell(msg, sender)
@@ -50,7 +50,9 @@ object GetterSpec {
 
 }
 
-class GetterSpec extends TestKit(ActorSystem("GetterSpec")) with WordSpecLike with BeforeAndAfterAll with ImplicitSender {
+class GetterSpec extends TestKit(ActorSystem("GetterSpec")) 
+  with WordSpecLike with BeforeAndAfterAll with ImplicitSender {
+  
   import GetterSpec._
 
   override def afterAll(): Unit = {
@@ -60,14 +62,14 @@ class GetterSpec extends TestKit(ActorSystem("GetterSpec")) with WordSpecLike wi
   "A Getter" must {
 
     "return the right body" in {
-      val getter = system.actorOf(Props(new Parent(fakeGetter(firstLink, 2), testActor)), "rightBody")
+      val getter = system.actorOf(Props(new StepParent(fakeGetter(firstLink, 2), testActor)), "rightBody")
       for (link ← links(firstLink))
         expectMsg(Controller.Check(link, 2))
       expectMsg(Getter.Done)
     }
     
     "properly finish in case of errors" in {
-      val getter = system.actorOf(Props(new Parent(fakeGetter("unknown", 2), testActor)), "wrongLink")
+      val getter = system.actorOf(Props(new StepParent(fakeGetter("unknown", 2), testActor)), "wrongLink")
       expectMsg(Getter.Done)
     }
 
