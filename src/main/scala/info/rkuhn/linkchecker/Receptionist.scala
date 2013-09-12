@@ -4,6 +4,7 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Terminated
+import akka.actor.SupervisorStrategy
 
 object Receptionist {
   private case class Job(client: ActorRef, url: String)
@@ -14,8 +15,10 @@ object Receptionist {
 
 class Receptionist extends Actor {
   import Receptionist._
-  
+
   def controllerProps: Props = Props[Controller]
+
+  override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   var reqNo = 0
 
@@ -30,7 +33,11 @@ class Receptionist extends Actor {
     case Controller.Result(links) ⇒
       val job = queue.head
       job.client ! Result(job.url, links)
-      context.stop(sender)
+      context.stop(context.unwatch(sender))
+      context.become(runNext(queue.tail))
+    case Terminated(_) ⇒
+      val job = queue.head
+      job.client ! Failed(job.url)
       context.become(runNext(queue.tail))
     case Get(url) ⇒
       context.become(enqueueJob(queue, Job(sender, url)))
@@ -41,6 +48,7 @@ class Receptionist extends Actor {
     if (queue.isEmpty) waiting
     else {
       val controller = context.actorOf(controllerProps, s"c$reqNo")
+      context.watch(controller)
       controller ! Controller.Check(queue.head.url, 2)
       running(queue)
     }

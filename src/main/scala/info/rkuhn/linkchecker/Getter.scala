@@ -7,13 +7,7 @@ import akka.actor.ActorLogging
 import akka.actor.Status
 import scala.concurrent.ExecutionContext
 
-object Getter {
-  case object Done
-  case object Abort
-}
-
 class Getter(url: String, depth: Int) extends Actor {
-  import Getter._
 
   implicit val executor = context.dispatcher.asInstanceOf[Executor with ExecutionContext]
   def client: WebClient = AsyncWebClient
@@ -24,14 +18,8 @@ class Getter(url: String, depth: Int) extends Actor {
     case body: String ⇒
       for (link ← findLinks(body))
         context.parent ! Controller.Check(link, depth)
-      stop()
-    case _: Status.Failure ⇒ stop()
-    case Abort             ⇒ stop()
-  }
-
-  def stop(): Unit = {
-    context.parent ! Done
-    context.stop(self)
+      context.stop(self)
+    case _: Status.Failure ⇒ context.stop(self)
   }
 
   val A_TAG = "(?i)<a ([^>]+)>.+?</a>".r
