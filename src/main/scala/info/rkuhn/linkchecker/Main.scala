@@ -10,6 +10,7 @@ class Main extends Actor {
   import Receptionist._
 
   val receptionist = context.actorOf(Props[Receptionist], "receptionist")
+  context.watch(receptionist) // sign death pact
   
   receptionist ! Get("http://www.google.com")
   receptionist ! Get("http://www.google.com/1")
