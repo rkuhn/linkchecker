@@ -65,12 +65,14 @@ class GetterSpec extends TestKit(ActorSystem("GetterSpec"))
       val getter = system.actorOf(Props(new StepParent(fakeGetter(firstLink, 2), testActor)), "rightBody")
       for (link ← links(firstLink))
         expectMsg(Controller.Check(link, 2))
-      expectMsg(Getter.Done)
+      watch(getter)
+      expectTerminated(getter)
     }
     
     "properly finish in case of errors" in {
       val getter = system.actorOf(Props(new StepParent(fakeGetter("unknown", 2), testActor)), "wrongLink")
-      expectMsg(Getter.Done)
+      watch(getter)
+      expectTerminated(getter)
     }
 
   }
