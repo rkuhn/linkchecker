@@ -47,7 +47,7 @@ class ReceptionistSpec extends TestKit(ActorSystem("ReceptionistSpec"))
     "reject request flood" in {
       val receptionist = system.actorOf(fakeReceptionist, "rejectFlood")
       for (i ← 1 to 5) receptionist ! Get(s"myURL$i")
-      expectMsg(Failed("myURL5"))
+      expectMsg(Failed("myURL5", "queue overflow"))
       for (i ← 1 to 4) expectMsg(Result(s"myURL$i", Set(s"myURL$i")))
     }
 
