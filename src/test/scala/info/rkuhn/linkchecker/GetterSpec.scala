@@ -10,16 +10,18 @@ import akka.testkit.ImplicitSender
 import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.ActorRef
+import akka.actor.Terminated
 
 class StepParent(child: Props, fwd: ActorRef) extends Actor {
-  context.actorOf(child, "child")
+  context.watch(context.actorOf(child, "child"))
   def receive = {
-    case msg ⇒ fwd.tell(msg, sender)
+    case Terminated(_) ⇒ context.stop(self)
+    case msg           ⇒ fwd.tell(msg, sender)
   }
 }
 
 object GetterSpec {
-  
+
   val firstLink = "http://www.rkuhn.info/1"
 
   val bodies = Map(
@@ -50,9 +52,9 @@ object GetterSpec {
 
 }
 
-class GetterSpec extends TestKit(ActorSystem("GetterSpec")) 
+class GetterSpec extends TestKit(ActorSystem("GetterSpec"))
   with WordSpecLike with BeforeAndAfterAll with ImplicitSender {
-  
+
   import GetterSpec._
 
   override def afterAll(): Unit = {
@@ -68,7 +70,7 @@ class GetterSpec extends TestKit(ActorSystem("GetterSpec"))
       watch(getter)
       expectTerminated(getter)
     }
-    
+
     "properly finish in case of errors" in {
       val getter = system.actorOf(Props(new StepParent(fakeGetter("unknown", 2), testActor)), "wrongLink")
       watch(getter)
