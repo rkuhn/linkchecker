@@ -7,14 +7,15 @@ import akka.actor.ActorSystem
 import akka.actor.Actor
 import akka.actor.Props
 import org.scalatest.BeforeAndAfterAll
+import scala.concurrent.duration._
 
 object ReceptionistSpec {
 
   class FakeController extends Actor {
+    import context.dispatcher
     def receive = {
       case Controller.Check(url, depth) ⇒
-        Thread.sleep(1000)
-        sender ! Controller.Result(Set(url))
+        context.system.scheduler.scheduleOnce(1.second, sender, Controller.Result(Set(url)))
     }
   }
 
@@ -25,7 +26,9 @@ object ReceptionistSpec {
 
 }
 
-class ReceptionistSpec extends TestKit(ActorSystem("ReceptionistSpec")) with WordSpecLike with BeforeAndAfterAll with ImplicitSender {
+class ReceptionistSpec extends TestKit(ActorSystem("ReceptionistSpec"))
+  with WordSpecLike with BeforeAndAfterAll with ImplicitSender {
+  
   import ReceptionistSpec._
   import Receptionist._
 
