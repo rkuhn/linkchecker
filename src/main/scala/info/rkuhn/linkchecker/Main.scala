@@ -6,6 +6,11 @@ import scala.concurrent.duration._
 import akka.actor.ReceiveTimeout
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent
+import akka.actor.RootActorPath
+import akka.actor.Identify
+import akka.actor.ActorIdentity
+import akka.actor.ActorLogging
+import akka.actor.Terminated
 
 class Main extends Actor {
 
@@ -78,13 +83,22 @@ class ClusterMain extends Actor {
 
 }
 
-class ClusterWorker extends Actor {
+class ClusterWorker extends Actor with ActorLogging {
   val cluster = Cluster(context.system)
-  cluster.subscribe(self, classOf[ClusterEvent.MemberRemoved])
+  cluster.subscribe(self, classOf[ClusterEvent.MemberUp])
+  //cluster.subscribe(self, classOf[ClusterEvent.MemberRemoved])
   val main = cluster.selfAddress.copy(port = Some(2552))
   cluster.join(main)
 
   def receive = {
+    case ClusterEvent.MemberUp(member) ⇒
+      if (member.address == main)
+        context.actorSelection(RootActorPath(main) / "user" / "app" / "receptionist") ! Identify("42")
+    case ActorIdentity("42", None) ⇒ context.stop(self)
+    case ActorIdentity("42", Some(ref)) ⇒
+      log.info("receptionist is at {}", ref)
+      context.watch(ref)
+    case Terminated(_) ⇒ context.stop(self)
     case ClusterEvent.MemberRemoved(m, _) ⇒
       if (m.address == main) context.stop(self)
   }

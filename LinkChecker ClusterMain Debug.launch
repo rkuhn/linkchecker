@@ -11,7 +11,7 @@
 </listAttribute>
 <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="akka.Main"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="info.rkuhn.linkchecker.ClusterWorker"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="info.rkuhn.linkchecker.ClusterMain"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="linkchecker"/>
-<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dakka.loglevel=INFO&#10;-Dakka.actor.provider=akka.cluster.ClusterActorRefProvider&#10;-Dakka.remote.netty.tcp.port=0&#10;-Dakka.cluster.auto-down=on"/>
+<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dakka.loglevel=DEBUG&#10;-Dakka.actor.provider=akka.cluster.ClusterActorRefProvider&#10;-Dakka.cluster.min-nr-of-members=2&#10;-Dakka.remote.log-received-messages=on&#10;-Dakka.remote.log-sent-messages=on&#10;-Dakka.actor.debug.lifecycle=on&#10;-Dakka.actor.debug.auto-receive=on"/>
 </launchConfiguration>

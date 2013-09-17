@@ -13,6 +13,7 @@ import akka.actor.ReceiveTimeout
 import akka.actor.Deploy
 import akka.remote.RemoteScope
 import scala.util.Random
+import akka.cluster.Member
 
 object Receptionist {
   private case class Job(client: ActorRef, url: String)
@@ -82,7 +83,7 @@ class ClusterReceptionist extends Actor {
   override def postStop(): Unit = {
     cluster.unsubscribe(self)
   }
-  
+
   val randomGen = new Random
   def pick[A](coll: IndexedSeq[A]): A = coll(randomGen.nextInt(coll.size))
 
@@ -90,6 +91,9 @@ class ClusterReceptionist extends Actor {
 
   val awaitingMembers: Receive = {
     case Get(url) ⇒ sender ! Failed(url, "no nodes available")
+    case current: ClusterEvent.CurrentClusterState ⇒
+      val notMe = current.members.toVector map (_.address) filter (_ != cluster.selfAddress)
+      if (notMe.nonEmpty) context.become(active(notMe))
     case MemberUp(member) if member.address != cluster.selfAddress ⇒
       context.become(active(Vector(member.address)))
   }
@@ -97,12 +101,13 @@ class ClusterReceptionist extends Actor {
   def active(addresses: Vector[Address]): Receive = {
     case Get(url) if context.children.size < addresses.size ⇒
       val client = sender
-      context.actorOf(Props(new Customer(client, url, pick(addresses))))
-    case Get(url) =>
+      val address = pick(addresses)
+      context.actorOf(Props(new Customer(client, url, address)))
+    case Get(url) ⇒
       sender ! Failed(url, "too many parallel queries")
-    case MemberUp(member) if member.address != cluster.selfAddress =>
+    case MemberUp(member) if member.address != cluster.selfAddress ⇒
       context.become(active(addresses :+ member.address))
-    case MemberRemoved(member, _) =>
+    case MemberRemoved(member, _) ⇒
       val next = addresses filterNot (_ == member.address)
       if (next.isEmpty) context.become(awaitingMembers)
       else context.become(active(next))
@@ -111,7 +116,7 @@ class ClusterReceptionist extends Actor {
 
 class Customer(client: ActorRef, url: String, node: Address) extends Actor {
   implicit val s = context.parent
-  
+
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
   val props = Props[Controller].withDeploy(Deploy(scope = RemoteScope(node)))
   val controller = context.actorOf(props, "controller")
@@ -122,12 +127,12 @@ class Customer(client: ActorRef, url: String, node: Address) extends Actor {
 
   def receive = ({
     case ReceiveTimeout ⇒
-      context.stop(controller)
+      context.unwatch(controller)
       client ! Receptionist.Failed(url, "controller timed out")
     case Terminated(_) ⇒
       client ! Receptionist.Failed(url, "controller died")
     case Controller.Result(links) ⇒
-      context.stop(context.unwatch(controller))
+      context.unwatch(controller)
       client ! Receptionist.Result(url, links)
   }: Receive) andThen (_ ⇒ context.stop(self))
 }
