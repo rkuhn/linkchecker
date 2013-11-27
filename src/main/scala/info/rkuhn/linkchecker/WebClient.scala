@@ -31,5 +31,5 @@ object WebClient {
 
 object WebClientTest extends App {
   import scala.concurrent.ExecutionContext.Implicits.global
-  WebClient get "http://www.google.com/1" map println foreach (_ ⇒ WebClient.shutdown())
+  WebClient get "http://www.google.com/" map println foreach (_ ⇒ WebClient.shutdown())
 }
