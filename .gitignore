@@ -3,4 +3,5 @@
 .classpath
 .cache
 target/
+/lib_managed
 /.target

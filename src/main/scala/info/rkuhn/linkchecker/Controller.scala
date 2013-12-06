@@ -19,7 +19,7 @@ class Controller extends Actor with ActorLogging {
   import Controller._
 
   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 5) {
-    case _: Exception ⇒ SupervisorStrategy.Restart
+    case _: Exception => SupervisorStrategy.Restart
   }
 
   var cache = Set.empty[String]
@@ -29,15 +29,15 @@ class Controller extends Actor with ActorLogging {
   def getterProps(url: String, depth: Int): Props = Props(new Getter(url, depth))
 
   def receive = {
-    case Check(url, depth) ⇒
+    case Check(url, depth) =>
       log.debug("{} checking {}", depth, url)
       if (!cache(url) && depth > 0)
         context.watch(context.actorOf(getterProps(url, depth - 1)))
       cache += url
-    case Terminated(_) ⇒
+    case Terminated(_) =>
       if (context.children.isEmpty)
         context.parent ! Result(cache)
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       context.children foreach context.stop
   }
 

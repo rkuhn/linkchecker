@@ -9,3 +9,7 @@ libraryDependencies ++= Seq(
   "com.ning" % "async-http-client" % "1.7.19",
   "ch.qos.logback" % "logback-classic" % "1.0.7")
 
+retrieveManaged := true
+
+EclipseKeys.relativizeLibs := true
+
