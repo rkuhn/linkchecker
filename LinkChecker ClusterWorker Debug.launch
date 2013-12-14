@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
-<listEntry value="/linkchecker"/>
+<listEntry value="/linkchecker2/lib_managed/jars/com.typesafe.akka/akka-actor_2.10/akka-actor_2.10-2.3-M1.jar"/>
 </listAttribute>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
-<listEntry value="4"/>
+<listEntry value="1"/>
 </listAttribute>
 <listAttribute key="org.eclipse.debug.ui.favoriteGroups">
 <listEntry value="org.eclipse.debug.ui.launchGroup.run"/>
@@ -12,6 +12,6 @@
 <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="akka.Main"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="info.rkuhn.linkchecker.ClusterWorker"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="linkchecker"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="linkchecker2"/>
 <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dakka.loglevel=DEBUG&#10;-Dakka.actor.provider=akka.cluster.ClusterActorRefProvider&#10;-Dakka.remote.netty.tcp.port=0&#10;-Dakka.cluster.auto-down=on&#10;-Dakka.actor.debug.lifecycle=on&#10;-Dakka.actor.debug.auto-receive=on&#10;-Dakka.remote.log-received-messages=on&#10;-Dakka.remote.log-sent-messages=on"/>
 </launchConfiguration>
