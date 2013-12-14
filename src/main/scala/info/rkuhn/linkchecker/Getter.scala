@@ -15,11 +15,11 @@ class Getter(url: String, depth: Int) extends Actor {
   client get url pipeTo self
 
   def receive = {
-    case body: String ⇒
-      for (link ← findLinks(body))
+    case body: String =>
+      for (link <- findLinks(body))
         context.parent ! Controller.Check(link, depth)
       context.stop(self)
-    case _: Status.Failure ⇒ context.stop(self)
+    case _: Status.Failure => context.stop(self)
   }
 
   val A_TAG = "(?i)<a ([^>]+)>.+?</a>".r
@@ -27,8 +27,8 @@ class Getter(url: String, depth: Int) extends Actor {
 
   def findLinks(body: String): Iterator[String] = {
     for {
-      anchor ← A_TAG.findAllMatchIn(body)
-      HREF_ATTR(dquot, quot, bare) ← anchor.subgroups
+      anchor <- A_TAG.findAllMatchIn(body)
+      HREF_ATTR(dquot, quot, bare) <- anchor.subgroups
     } yield if (dquot != null) dquot
     else if (quot != null) quot
     else bare

@@ -34,21 +34,21 @@ class Receptionist extends Actor {
   def receive = waiting
 
   val waiting: Receive = {
-    case Get(url) ⇒
+    case Get(url) =>
       context.become(runNext(Vector(Job(sender, url))))
   }
 
   def running(queue: Vector[Job]): Receive = {
-    case Controller.Result(links) ⇒
+    case Controller.Result(links) =>
       val job = queue.head
       job.client ! Result(job.url, links)
       context.stop(context.unwatch(sender))
       context.become(runNext(queue.tail))
-    case Terminated(_) ⇒
+    case Terminated(_) =>
       val job = queue.head
       job.client ! Failed(job.url, "controller failed unexpectedly")
       context.become(runNext(queue.tail))
-    case Get(url) ⇒
+    case Get(url) =>
       context.become(enqueueJob(queue, Job(sender, url)))
   }
 
@@ -90,24 +90,24 @@ class ClusterReceptionist extends Actor {
   def receive = awaitingMembers
 
   val awaitingMembers: Receive = {
-    case Get(url) ⇒ sender ! Failed(url, "no nodes available")
-    case current: ClusterEvent.CurrentClusterState ⇒
+    case Get(url) => sender ! Failed(url, "no nodes available")
+    case current: ClusterEvent.CurrentClusterState =>
       val notMe = current.members.toVector map (_.address) filter (_ != cluster.selfAddress)
       if (notMe.nonEmpty) context.become(active(notMe))
-    case MemberUp(member) if member.address != cluster.selfAddress ⇒
+    case MemberUp(member) if member.address != cluster.selfAddress =>
       context.become(active(Vector(member.address)))
   }
 
   def active(addresses: Vector[Address]): Receive = {
-    case Get(url) if context.children.size < addresses.size ⇒
+    case Get(url) if context.children.size < addresses.size =>
       val client = sender
       val address = pick(addresses)
       context.actorOf(Props(new Customer(client, url, address)))
-    case Get(url) ⇒
+    case Get(url) =>
       sender ! Failed(url, "too many parallel queries")
-    case MemberUp(member) if member.address != cluster.selfAddress ⇒
+    case MemberUp(member) if member.address != cluster.selfAddress =>
       context.become(active(addresses :+ member.address))
-    case MemberRemoved(member, _) ⇒
+    case MemberRemoved(member, _) =>
       val next = addresses filterNot (_ == member.address)
       if (next.isEmpty) context.become(awaitingMembers)
       else context.become(active(next))
@@ -126,13 +126,13 @@ class Customer(client: ActorRef, url: String, node: Address) extends Actor {
   controller ! Controller.Check(url, 2)
 
   def receive = ({
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       context.unwatch(controller)
       client ! Receptionist.Failed(url, "controller timed out")
-    case Terminated(_) ⇒
+    case Terminated(_) =>
       client ! Receptionist.Failed(url, "controller died")
-    case Controller.Result(links) ⇒
+    case Controller.Result(links) =>
       context.unwatch(controller)
       client ! Receptionist.Result(url, links)
-  }: Receive) andThen (_ ⇒ context.stop(self))
+  }: Receive) andThen (_ => context.stop(self))
 }

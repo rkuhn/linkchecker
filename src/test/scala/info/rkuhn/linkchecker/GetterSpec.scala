@@ -15,8 +15,8 @@ import akka.actor.Terminated
 class StepParent(child: Props, fwd: ActorRef) extends Actor {
   context.watch(context.actorOf(child, "child"))
   def receive = {
-    case Terminated(_) ⇒ context.stop(self)
-    case msg           ⇒ fwd.tell(msg, sender)
+    case Terminated(_) => context.stop(self)
+    case msg           => fwd.tell(msg, sender)
   }
 }
 
@@ -40,8 +40,8 @@ object GetterSpec {
   object FakeWebClient extends WebClient {
     def get(url: String)(implicit exec: Executor): Future[String] =
       bodies get url match {
-        case None       ⇒ Future.failed(BadStatus(404))
-        case Some(body) ⇒ Future.successful(body)
+        case None       => Future.failed(BadStatus(404))
+        case Some(body) => Future.successful(body)
       }
   }
 
@@ -65,7 +65,7 @@ class GetterSpec extends TestKit(ActorSystem("GetterSpec"))
 
     "return the right body" in {
       val getter = system.actorOf(Props(new StepParent(fakeGetter(firstLink, 2), testActor)), "rightBody")
-      for (link ← links(firstLink))
+      for (link <- links(firstLink))
         expectMsg(Controller.Check(link, 2))
       watch(getter)
       expectTerminated(getter)

@@ -29,11 +29,11 @@ class Main extends Actor {
   context.setReceiveTimeout(10.seconds)
 
   def receive = {
-    case Result(url, set) ⇒
+    case Result(url, set) =>
       println(set.toVector.sorted.mkString(s"Results for '$url':\n", "\n", "\n"))
-    case Failed(url, reason) ⇒
+    case Failed(url, reason) =>
       println(s"Failed to fetch '$url': $reason\n")
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       context.stop(self)
   }
 
@@ -63,7 +63,7 @@ class ClusterMain extends Actor {
   getLater(Duration.Zero, "http://www.google.com")
 
   def receive = {
-    case ClusterEvent.MemberUp(member) ⇒
+    case ClusterEvent.MemberUp(member) =>
       if (member.address != cluster.selfAddress) {
         getLater(1.seconds, "http://www.google.com")
         getLater(2.seconds, "http://www.google.com/0")
@@ -72,13 +72,13 @@ class ClusterMain extends Actor {
         getLater(4.seconds, "http://www.google.com/3")
         context.setReceiveTimeout(3.seconds)
       }
-    case Result(url, set) ⇒
+    case Result(url, set) =>
       println(set.toVector.sorted.mkString(s"Results for '$url':\n", "\n", "\n"))
-    case Failed(url, reason) ⇒
+    case Failed(url, reason) =>
       println(s"Failed to fetch '$url': $reason\n")
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       cluster.leave(cluster.selfAddress)
-    case ClusterEvent.MemberRemoved(m, _) ⇒
+    case ClusterEvent.MemberRemoved(m, _) =>
       context.stop(self)
   }
 
@@ -92,15 +92,15 @@ class ClusterWorker extends Actor with ActorLogging {
   cluster.join(main)
 
   def receive = {
-    case ClusterEvent.MemberUp(member) ⇒
+    case ClusterEvent.MemberUp(member) =>
       if (member.address == main)
         context.actorSelection(RootActorPath(main) / "user" / "app" / "receptionist") ! Identify("42")
-    case ActorIdentity("42", None) ⇒ context.stop(self)
-    case ActorIdentity("42", Some(ref)) ⇒
+    case ActorIdentity("42", None) => context.stop(self)
+    case ActorIdentity("42", Some(ref)) =>
       log.info("receptionist is at {}", ref)
       context.watch(ref)
-    case Terminated(_) ⇒ context.stop(self)
-    case ClusterEvent.MemberRemoved(m, _) ⇒
+    case Terminated(_) => context.stop(self)
+    case ClusterEvent.MemberRemoved(m, _) =>
       if (m.address == main) context.stop(self)
   }
 
